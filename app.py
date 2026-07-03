@@ -55,9 +55,13 @@ if st.session_state.user is None:
 
 # ================= AREA DASBOR =================
 else:
+    # ⚠️ SISTEM PENGAMAN: Mencegah error jika data profil kosong
+    nama_user = st.session_state.name if st.session_state.name else "Data Hilang"
+    jabatan_user = st.session_state.role if st.session_state.role else "tidak diketahui"
+    
     # --- PANEL SAMPING (SIDEBAR) ---
-    st.sidebar.write(f"👤 Nama: **{st.session_state.name}**")
-    st.sidebar.write(f"🏢 Jabatan: **{st.session_state.role.upper()}**")
+    st.sidebar.write(f"👤 Nama: **{nama_user}**")
+    st.sidebar.write(f"🏢 Jabatan: **{jabatan_user.upper()}**")
     st.sidebar.divider()
     
     if st.sidebar.button("Keluar (Logout)"):
@@ -67,14 +71,17 @@ else:
         st.session_state.name = None
         st.rerun()
 
+    # --- LOGIKA JIKA DATA PROFIL HILANG ---
+    if jabatan_user == "tidak diketahui":
+        st.error("⚠️ Sistem mendeteksi profil Anda tidak lengkap akibat kegagalan pendaftaran sebelumnya.")
+        st.info("💡 Solusi: Silakan klik tombol **Keluar (Logout)** di sebelah kiri, lalu Daftar ulang menggunakan email yang 100% baru.")
+
     # --- DASBOR ADMIN RECRUITMENT ---
-    if st.session_state.role == "admin":
+    elif st.session_state.role == "admin":
         st.header("Dashboard Admin Recruitment")
         
-        # Membuat Tab Menu untuk Admin
         tab_admin1, tab_admin2 = st.tabs(["📢 Posting Lowongan Baru", "📁 Daftar Lowongan Aktif"])
         
-        # Fitur 1: Memposting Lowongan
         with tab_admin1:
             st.subheader("Formulir Pembuatan Lowongan")
             with st.form("form_lowongan", clear_on_submit=True):
@@ -83,7 +90,6 @@ else:
                 job_desc = st.text_area("Deskripsi Pekerjaan (Job Desk)")
                 job_spec = st.text_area("Kualifikasi (Job Spec)")
                 
-                # Fitur Lanjutan: Custom Stages
                 st.info("💡 **Custom Stages**: Tentukan tahapan rekrutmen. Pisahkan dengan tanda koma (,).")
                 stages_input = st.text_input("Tahapan Rekrutmen", value="Screening CV, HR Interview, User Interview, Offering")
                 
@@ -92,7 +98,6 @@ else:
                 if submit_job:
                     if job_title and job_desc and job_spec:
                         try:
-                            # 1. Mengirim data lowongan ke tabel 'jobs'
                             job_data = {
                                 "title": job_title,
                                 "job_description": job_desc,
@@ -103,7 +108,6 @@ else:
                             job_res = supabase.table("jobs").insert(job_data).execute()
                             job_id = job_res.data[0]['id']
                             
-                            # 2. Mengirim data tahapan ke tabel 'stages'
                             stages_list = [s.strip() for s in stages_input.split(",")]
                             stages_data = [{"job_id": job_id, "stage_name": stage_name, "sequence_order": i + 1} for i, stage_name in enumerate(stages_list)]
                             supabase.table("stages").insert(stages_data).execute()
@@ -114,11 +118,9 @@ else:
                     else:
                         st.warning("Mohon lengkapi Judul, Deskripsi, dan Kualifikasi pekerjaan.")
         
-        # Fitur 2: Melihat Daftar Lowongan (Data ditarik dari Database)
         with tab_admin2:
             st.subheader("Lowongan Perusahaan")
             try:
-                # Mengambil data dari tabel jobs
                 jobs_db = supabase.table("jobs").select("*").order("created_at", desc=True).execute()
                 if jobs_db.data:
                     for job in jobs_db.data:
@@ -126,7 +128,6 @@ else:
                             st.write("**Deskripsi:**", job['job_description'])
                             st.write("**Kualifikasi:**", job['job_specification'])
                             
-                            # Mengambil data tahapan untuk lowongan ini
                             stages_db = supabase.table("stages").select("stage_name").eq("job_id", job['id']).order("sequence_order").execute()
                             stages_text = " ➡️ ".join([s['stage_name'] for s in stages_db.data])
                             st.caption(f"**Tahapan:** {stages_text}")
