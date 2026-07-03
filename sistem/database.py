@@ -7,7 +7,7 @@ def init_connection() -> Client:
     url = "https://lwiuemxgjttpirylkyem.supabase.co"
     
     # Kunci Secret disisipkan langsung agar sistem bisa langsung diakses
-    key = "sb_publishable_inPtlUjjFbAeOv49YkU07Q_AaCnxMrX"
+    key = "sb_secret_tZOx-pOtRYVQtqYmMNAdkQ_5T1LRNsk"
     
     return create_client(url, key)
 
